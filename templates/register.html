@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card card-premium shadow-lg">
+                <div class="card-header card-header-cyan text-center py-4">
+                    <h3 class="mb-0 text-white brand-font"><i class="fa fa-user-plus me-2"></i> Join CareVoice Network</h3>
+                    <p class="mb-0 text-white-50 small mt-1">Register as a Healthcare Practitioner or Patient</p>
+                </div>
+                <div class="card-body p-4">
+                    <form action="/register" method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" name="name" id="name" class="form-control form-control-custom" placeholder="e.g. Dr. Sarah Jenkins or John Doe" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" name="email" id="email" class="form-control form-control-custom" placeholder="patient@mail.com" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="age" class="form-label">Age</label>
+                                <input type="number" name="age" id="age" class="form-control form-control-custom" min="1" max="120" placeholder="e.g. 35" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="gender" class="form-label">Gender</label>
+                                <select name="gender" id="gender" class="form-select form-control-custom" required>
+                                    <option value="" disabled selected>Select</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="text" name="phone" id="phone" class="form-control form-control-custom" placeholder="e.g. +123456789" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" name="password" id="password" class="form-control form-control-custom" placeholder="••••••••" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="user_type" class="form-label">Role</label>
+                                <select name="user_type" id="user_type" class="form-select form-control-custom" required>
+                                    <option value="patient" selected>Patient</option>
+                                    <option value="doctor">Medical Doctor</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Doctor specific fields (Toggled dynamically) -->
+                        <div id="doctor-fields" class="d-none border-top pt-4 mt-3">
+                            <h5 class="brand-font text-primary mb-3"><i class="fa fa-stethoscope me-2"></i> Professional Qualifications</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="specialization" class="form-label">Specialization / Department</label>
+                                    <input type="text" name="specialization" id="specialization" class="form-control form-control-custom" placeholder="e.g. Cardiology, Pediatrics">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="license_number" class="form-label">Registration / Medical License Number</label>
+                                    <input type="text" name="license_number" id="license_number" class="form-control form-control-custom" placeholder="e.g. LIC-981244">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="experience_years" class="form-label">Years of clinical experience</label>
+                                    <input type="number" name="experience_years" id="experience_years" class="form-control form-control-custom" min="0" placeholder="e.g. 8">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="bio" class="form-label">Short Medical Biography</label>
+                                    <textarea name="bio" id="bio" rows="2" class="form-control form-control-custom" placeholder="Briefly describe your clinical interests..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-secondary-custom w-100 py-3 mt-4"><i class="fa fa-user-plus me-2"></i> Create Profile</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <p class="text-muted small">Already registered? <a href="/login" class="text-primary fw-bold">Sign In here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const roleSelect = document.getElementById("user_type");
+    const doctorFields = document.getElementById("doctor-fields");
+    const spec = document.getElementById("specialization");
+    const lic = document.getElementById("license_number");
+    
+    roleSelect.addEventListener("change", function() {
+        if(roleSelect.value === "doctor") {
+            doctorFields.classList.remove("d-none");
+            spec.required = true;
+            lic.required = true;
+        } else {
+            doctorFields.classList.add("d-none");
+            spec.required = false;
+            lic.required = false;
+        }
+    });
+});
+</script>
+{% endblock %}

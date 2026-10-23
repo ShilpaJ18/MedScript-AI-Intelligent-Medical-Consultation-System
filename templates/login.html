@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card card-premium shadow-lg">
+                <div class="card-header card-header-blue text-center py-4">
+                    <h3 class="mb-0 text-white brand-font"><i class="fa fa-lock me-2"></i> Clinical Portal Sign In</h3>
+                    <p class="mb-0 text-white-50 small mt-1">Access Patient, Doctor, or Admin dashboard</p>
+                </div>
+                <div class="card-body p-4">
+                    <form action="/login" method="POST">
+                        <div class="mb-3">
+                            <label for="email" class="form-label font-weight-bold">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-color"><i class="fa fa-envelope text-muted"></i></span>
+                                <input type="email" name="email" id="email" class="form-control form-control-custom" placeholder="doctor@hospital.com or patient@mail.com" required>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="password" class="form-label font-weight-bold">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-color"><i class="fa fa-key text-muted"></i></span>
+                                <input type="password" name="password" id="password" class="form-control form-control-custom" placeholder="••••••••" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary-custom w-100 py-3 mb-3"><i class="fa fa-sign-in-alt me-2"></i> Access Account</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <p class="text-muted small">New to CareVoice? <a href="/register" class="text-secondary fw-bold">Create Patient or Doctor Account</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

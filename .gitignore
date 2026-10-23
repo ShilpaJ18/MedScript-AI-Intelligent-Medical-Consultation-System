@@ -1,0 +1,39 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Environment Variables & Secrets
+.env
+*.env.local
+
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# User uploads & generated files (keep folder structure)
+uploads/audio/*
+!uploads/audio/.gitkeep
+generated_pdfs/*
+!generated_pdfs/.gitkeep
+
+# Vector store data & databases
+vector_store_data/
+*.faiss
+*.pkl
+*.db
+database/*.db
+
+# IDE & OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,17 @@
+Flask>=3.0.0
+mysql-connector-python>=8.0.33
+bcrypt>=4.0.1
+reportlab>=4.0.4
+python-dotenv>=1.0.0
+google-generativeai>=0.3.0
+SpeechRecognition>=3.10.0
+pydantic>=2.0
+PyMuPDF>=1.23.0
+pandas>=2.0.0
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
+chromadb>=0.4.15
+langchain>=0.1.0
+langchain-community>=0.0.10
+langchain-google-genai>=0.0.5
+pyspellchecker>=0.7.2

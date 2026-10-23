@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- Processing overlay loader -->
+<div id="processing-overlay" class="position-fixed top-0 start-0 w-100 h-100 bg-white bg-opacity-75 d-none d-flex flex-column align-items-center justify-content-center" style="z-index: 9999;">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+    <h4 class="brand-font mt-3 text-dark">CareVoice AI is Transcribing...</h4>
+    <p class="text-muted small">Converting audio via Speech-to-Text models. Please wait.</p>
+</div>
+
+<div class="container py-5">
+    <div class="row">
+        <!-- Patient Case Card -->
+        <div class="col-lg-4 mb-4">
+            <div class="card card-premium shadow-sm mb-4">
+                <div class="card-header bg-light border-bottom py-3">
+                    <h5 class="mb-0 brand-font text-dark"><i class="fa fa-user me-2"></i> Patient Information</h5>
+                </div>
+                <div class="card-body">
+                    <h5 class="brand-font text-primary">{{ appointment.patient_name }}</h5>
+                    <p class="mb-2 text-muted">Gender/Age: <b>{{ appointment.gender }} / {{ appointment.age }} yrs</b></p>
+                    <p class="mb-2 text-muted">Contact Email: <b>{{ appointment.patient_email }}</b></p>
+                    <hr class="text-muted">
+                    <h6 class="fw-bold text-dark mt-3">Reason for Consultation:</h6>
+                    <blockquote class="bg-light p-3 rounded text-secondary small border-start border-3 border-cyan">
+                        "{{ appointment.reason_for_visit or 'No complaints recorded.' }}"
+                    </blockquote>
+                </div>
+            </div>
+
+            <!-- Instruction Workflow -->
+            <div class="card card-premium bg-light border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h6 class="brand-font text-dark mb-3"><i class="fa fa-info-circle text-primary me-2"></i> AI Scribe Workflow</h6>
+                    <ol class="small text-muted ps-3">
+                        <li class="mb-2">Click <b>Start Consultation</b> to begin live microphone streaming.</li>
+                        <li class="mb-2">The transcript appears instantly in the editor below and updates in real time.</li>
+                        <li class="mb-2">Click <b>Stop Consultation</b> to finalize and review the transcript before extraction.</li>
+                        <li>Use the transcript editor, then continue to Gemini prescription extraction.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audio consultation workspace -->
+        <div class="col-lg-8 mb-4">
+            <div class="card card-premium shadow-sm mb-4">
+                <div class="card-header card-header-blue py-3">
+                    <h5 class="mb-0 text-white brand-font"><i class="fa fa-microphone me-2"></i> Clinical Scribe Workspace</h5>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Audio controls -->
+                    <div class="text-center py-4 border rounded mb-4 bg-light">
+                        <h6 class="brand-font text-secondary mb-3">Live Consultation Audio Capture</h6>
+                        
+                        <!-- Pulse Button -->
+                        <div id="start-record-btn" class="record-btn-pulsing">
+                            <i class="fa fa-microphone"></i>
+                        </div>
+                        <div id="stop-record-btn" class="record-btn-pulsing recording d-none">
+                            <i class="fa fa-stop"></i>
+                        </div>
+                        
+                        <!-- Visualizer animation -->
+                        <div id="recorder-wave" class="recorder-wave-container d-none mt-3">
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                        </div>
+
+                        <!-- Audio playback -->
+                        <audio id="audio-player" controls class="d-none w-75 mx-auto mt-4"></audio>
+                        
+                        <div class="mt-4">
+                            <button id="start-consultation-btn" class="btn btn-primary-custom px-4" type="button">
+                                <i class="fa fa-play me-2"></i> Start Consultation
+                            </button>
+                            <button id="stop-consultation-btn" class="btn btn-danger-custom px-4 ms-2" type="button" disabled>
+                                <i class="fa fa-stop me-2"></i> Stop Consultation
+                            </button>
+                            <button id="save-transcript-btn" class="btn btn-outline-secondary px-4 ms-2" type="button" disabled>
+                                <i class="fa fa-save me-2"></i> Save Transcript
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Alternate upload form -->
+                    <div class="border-top pt-4">
+                        <h6 class="brand-font text-muted mb-3"><i class="fa fa-file-audio me-2"></i> Alternate: Upload Audio File</h6>
+                        <form action="/consultation/{{ appointment.id }}/upload_file" method="POST" enctype="multipart/form-data" class="row align-items-center">
+                            <div class="col-md-9 mb-2">
+                                <input type="file" name="audio_file" class="form-control form-control-custom" accept=".wav,.mp3,.m4a" required>
+                                <span class="text-muted small">Supports WAV, MP3 formats. Max 10MB.</span>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button type="submit" class="btn btn-secondary-custom w-100"><i class="fa fa-upload"></i> Upload</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transcription & AI Generation Results -->
+            <div class="card card-premium shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 brand-font text-dark"><i class="fa fa-file-text me-2 text-primary"></i> Consultation Transcription</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label label-bold">Live transcript editor:</label>
+                        <textarea id="transcription-textarea" rows="10" class="form-control form-control-custom bg-light">{% if transcript %}{{ transcript.transcript_text }}{% endif %}</textarea>
+                    </div>
+                    <div id="transcript-status" class="small text-muted mb-3">Waiting for consultation audio…</div>
+                    <div class="p-3 bg-success-subtle text-success rounded-3 mb-4 small">
+                        <i class="fa fa-check-circle me-1"></i> The consultation transcript updates live while you speak. You can edit it before extraction.
+                    </div>
+                    <button id="extract-transcript-btn" type="button" class="btn btn-primary-custom py-3 px-4 w-100">
+                        <i class="fa fa-robot me-2"></i> Extract Parameters using Gemini AI
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const appointmentId = {{ appointment.id }};
+    const startRecordBtn = document.getElementById('start-record-btn');
+    const stopRecordBtn = document.getElementById('stop-record-btn');
+    const startConsultationBtn = document.getElementById('start-consultation-btn');
+    const stopConsultationBtn = document.getElementById('stop-consultation-btn');
+    const saveTranscriptBtn = document.getElementById('save-transcript-btn');
+    const extractTranscriptBtn = document.getElementById('extract-transcript-btn');
+    const transcriptTextarea = document.getElementById('transcription-textarea');
+    const transcriptStatus = document.getElementById('transcript-status');
+    const recorderWave = document.getElementById('recorder-wave');
+
+    let mediaRecorder = null;
+    let mediaStream = null;
+    let isStreaming = false;
+    let liveTranscript = '';
+
+    function setRecordingState(isRecording) {
+        startRecordBtn.classList.toggle('d-none', isRecording);
+        stopRecordBtn.classList.toggle('d-none', !isRecording);
+        recorderWave.classList.toggle('d-none', !isRecording);
+        startConsultationBtn.disabled = isRecording;
+        stopConsultationBtn.disabled = !isRecording;
+    }
+
+    function updateTranscriptDisplay(nextText) {
+        if (!nextText || !nextText.trim()) {
+            return;
+        }
+
+        const trimmedText = nextText.trim();
+        if (!liveTranscript || liveTranscript === 'Listening...' || liveTranscript === 'Waiting for consultation audio…') {
+            liveTranscript = trimmedText;
+        } else if (!liveTranscript.includes(trimmedText)) {
+            liveTranscript = `${liveTranscript}\n${trimmedText}`;
+        }
+
+        transcriptTextarea.value = liveTranscript;
+        if (transcriptStatus) {
+            transcriptStatus.textContent = 'Transcript is visible in the editor above.';
+        }
+        saveTranscriptBtn.disabled = false;
+    }
+
+    async function sendAudioChunk(blob) {
+        if (!isStreaming) return;
+        try {
+            const response = await fetch(`/consultation/${appointmentId}/stt/chunk`, {
+                method: 'POST',
+                headers: { 'Content-Type': blob.type || 'audio/webm' },
+                body: blob
+            });
+            const result = await response.json();
+            if (result.success && result.transcript_text) {
+                updateTranscriptDisplay(result.transcript_text);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function finalizeStream() {
+        const transcriptValue = transcriptTextarea.value.trim();
+        if (!transcriptValue) return;
+
+        try {
+            const response = await fetch(`/consultation/${appointmentId}/stt/stop`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transcript_text: transcriptValue })
+            });
+            const result = await response.json();
+            if (result.success) {
+                liveTranscript = result.transcript_text || transcriptValue;
+                transcriptTextarea.value = liveTranscript;
+                saveTranscriptBtn.disabled = false;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    let speechRecognition = null;
+
+    function initSpeechRecognition() {
+        const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognitionClass) {
+            speechRecognition = new SpeechRecognitionClass();
+            speechRecognition.continuous = true;
+            speechRecognition.interimResults = true;
+            speechRecognition.lang = 'en-US';
+
+            speechRecognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcriptPiece = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcriptPiece + ' ';
+                    } else {
+                        interimTranscript += transcriptPiece;
+                    }
+                }
+                if (finalTranscript.trim()) {
+                    updateTranscriptDisplay(finalTranscript.trim());
+                }
+            };
+
+            speechRecognition.onerror = (event) => {
+                console.warn('Web Speech API warning:', event.error);
+            };
+        }
+    }
+
+    async function startStreaming() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('This browser does not support live microphone streaming.');
+            return;
+        }
+
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+            mediaRecorder = new MediaRecorder(mediaStream, mimeType ? { mimeType } : undefined);
+
+            mediaRecorder.ondataavailable = async event => {
+                if (event.data.size > 0) {
+                    await sendAudioChunk(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                isStreaming = false;
+                if (speechRecognition) {
+                    try { speechRecognition.stop(); } catch (e) {}
+                }
+                await finalizeStream();
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                }
+                mediaRecorder = null;
+                setRecordingState(false);
+            };
+
+            const setupResponse = await fetch(`/consultation/${appointmentId}/stt/start`, { method: 'POST' });
+            const setupResult = await setupResponse.json();
+            if (!setupResult.success) {
+                throw new Error(setupResult.error || 'Could not start the live transcription session.');
+            }
+
+            isStreaming = true;
+            if (!liveTranscript || liveTranscript === 'Waiting for consultation audio…') {
+                liveTranscript = 'Listening...';
+            }
+            transcriptTextarea.value = liveTranscript;
+            if (transcriptStatus) {
+                transcriptStatus.textContent = 'Listening to the consultation…';
+            }
+
+            mediaRecorder.start(500);
+            initSpeechRecognition();
+            if (speechRecognition) {
+                try { speechRecognition.start(); } catch (e) {}
+            }
+
+            setRecordingState(true);
+            document.querySelectorAll('.wave-bar').forEach(bar => {
+                bar.classList.add('speaking');
+                bar.style.animationDuration = `${0.5 + Math.random()}s`;
+            });
+        } catch (error) {
+            console.error(error);
+            alert(error.message || 'Unable to access the microphone. Please allow microphone permissions.');
+        }
+    }
+
+    function stopStreaming() {
+        if (speechRecognition) {
+            try { speechRecognition.stop(); } catch (e) {}
+        }
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        } else if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+        }
+        document.querySelectorAll('.wave-bar').forEach(bar => bar.classList.remove('speaking'));
+    }
+
+    startRecordBtn.addEventListener('click', startStreaming);
+    startConsultationBtn.addEventListener('click', startStreaming);
+    stopRecordBtn.addEventListener('click', stopStreaming);
+    stopConsultationBtn.addEventListener('click', stopStreaming);
+
+    saveTranscriptBtn.addEventListener('click', async () => {
+        if (!transcriptTextarea.value.trim()) {
+            alert('Transcript content is empty.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/consultation/${appointmentId}/save_transcript`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transcript_text: transcriptTextarea.value })
+            });
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Could not save transcript.');
+            }
+            saveTranscriptBtn.disabled = true;
+            alert('Transcript saved.');
+        } catch (error) {
+            console.error(error);
+            alert(error.message || 'Could not save transcript.');
+        }
+    });
+
+    if (extractTranscriptBtn) {
+        extractTranscriptBtn.addEventListener('click', async () => {
+            if (!transcriptTextarea.value.trim()) {
+                alert('Please review or save the transcript before extraction.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/consultation/${appointmentId}/save_transcript`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ transcript_text: transcriptTextarea.value })
+                });
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || 'Could not save transcript.');
+                }
+                window.location.href = `/consultation/${appointmentId}/extract`;
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'Could not save transcript.');
+            }
+        });
+    }
+</script>
+{% endblock %}

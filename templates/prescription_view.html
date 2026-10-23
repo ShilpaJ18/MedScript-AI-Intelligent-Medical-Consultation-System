@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9">
+            <!-- Prescription Panel -->
+            <div class="card card-premium shadow-lg p-5 bg-white border border-light">
+                <!-- Header Branding -->
+                <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4 flex-wrap">
+                    <div>
+                        <h3 class="brand-font text-primary mb-1"><i class="fa fa-stethoscope me-2"></i> METROPOLITAN GENERAL HOSPITAL</h3>
+                        <p class="text-secondary mb-0 small">123 Healthcare Boulevard, Medical District</p>
+                        <p class="text-muted mb-0 small">Phone: +1 (555) 019-2834 | contact@metrohospital.com</p>
+                    </div>
+                    <div class="text-md-end mt-3 mt-md-0">
+                        <h5 class="brand-font text-dark mb-1">{{ doctor.name }}</h5>
+                        <p class="text-secondary small mb-0">{{ doctor.specialization }}</p>
+                        <p class="text-muted small mb-0">Reg No: <b>{{ doctor.license_number }}</b></p>
+                    </div>
+                </div>
+
+                <!-- Patient Profile Info Banner -->
+                <div class="p-3 bg-light rounded-3 mb-4 border row">
+                    <div class="col-sm-6 mb-2 mb-sm-0">
+                        <p class="mb-1 text-muted small">PATIENT RECORD</p>
+                        <h5 class="brand-font text-dark mb-0">{{ rx.patient_name or patient.name }}</h5>
+                        <span class="text-muted small">Age/Gender: <b>{{ rx.age or patient.age }} yrs / {{ rx.gender or patient.gender }}</b></span>
+                    </div>
+                    <div class="col-sm-6 text-sm-end">
+                        <p class="mb-1 text-muted small">CASE TRANSACTION</p>
+                        <span class="text-secondary">Consult Date: <b>{{ rx.created_at.strftime('%Y-%m-%d') }}</b></span><br/>
+                        <span class="text-muted small">Appointment Ref: <b>#{{ rx.appointment_id }}</b></span>
+                    </div>
+                </div>
+
+                <!-- Case details -->
+                <div class="mb-4">
+                    <h5 class="brand-font text-primary border-bottom pb-2 mb-3">Clinical Case Summary</h5>
+                    <p class="mb-2 text-dark"><b>Presented Symptoms:</b> {{ rx.symptoms or 'None reported' }}</p>
+                    <p class="mb-0 text-dark"><b>Primary Diagnosis:</b> {{ rx.diagnosis or 'Pending physical verification' }}</p>
+                </div>
+
+                <!-- Medicines dynamic list -->
+                <div class="mb-4">
+                    <h5 class="brand-font text-primary border-bottom pb-2 mb-3">Rx (Prescribed Medications)</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Medicine Name</th>
+                                    <th>Dosage / Strength</th>
+                                    <th>Frequency</th>
+                                    <th>Duration Course</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if medicines %}
+                                    {% for med in medicines %}
+                                    <tr>
+                                        <td class="fw-semibold text-dark">{{ med.medicine_name or med.name }}</td>
+                                        <td>{{ med.dosage }}</td>
+                                        <td>{{ med.frequency }}</td>
+                                        <td>{{ med.duration }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No medications prescribed.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tests & Advice -->
+                <div class="row mb-5">
+                    <div class="col-md-6 mb-3">
+                        <h5 class="brand-font text-primary border-bottom pb-2 mb-3">Recommended Investigations</h5>
+                        <p class="text-secondary small">{{ rx.recommended_tests or 'No tests suggested at this time.' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <h5 class="brand-font text-primary border-bottom pb-2 mb-3">Clinical Advice & Instructions</h5>
+                        <p class="text-dark small mb-1"><b>Plan:</b> {{ rx.treatment_plan or 'None' }}</p>
+                        <p class="text-secondary small mb-2"><b>Advice:</b> {{ rx.doctor_advice or 'None' }}</p>
+                        {% if rx.follow_up_date %}
+                            <p class="mb-0 small text-primary"><b>Follow-up Date:</b> {{ rx.follow_up_date }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Footer Signatures -->
+                <div class="d-flex justify-content-between align-items-end pt-4 border-top">
+                    <div>
+                        <span class="text-muted small">Generated securely via CareVoice AI.</span>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-signature text-secondary mb-1" style="font-family: 'Georgia', serif; font-style: italic; font-size: 1.2rem;">
+                            {{ doctor.name }}
+                        </div>
+                        <div class="border-top pt-1 text-muted small" style="width: 180px;">Authorized Physician</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="/" class="btn btn-outline-secondary me-2"><i class="fa fa-home"></i> Dashboard</a>
+                <a href="/prescription/download/{{ rx.appointment_id }}" class="btn btn-success px-4"><i class="fa fa-download me-2"></i> Download PDF Copy</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

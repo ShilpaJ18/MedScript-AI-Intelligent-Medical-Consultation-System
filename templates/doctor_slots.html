@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="dashboard-container">
+    <!-- Sidebar navigation -->
+    <div class="sidebar d-none d-md-block">
+        <h4 class="brand-font mb-4 text-primary">Doctor Portal</h4>
+        <a href="/doctor_dashboard" class="sidebar-nav-link"><i class="fa fa-home"></i> Home</a>
+        <a href="/doctor_slots" class="sidebar-nav-link active"><i class="fa fa-clock"></i> Manage Availability</a>
+    </div>
+
+    <!-- Main Dashboard Area -->
+    <div class="dashboard-content">
+        <h2 class="brand-font text-dark mb-1">Manage Clinical Hours & Slots</h2>
+        <p class="text-muted small">Configure your weekly working hours and auto-generate 20-minute appointment slots for patients.</p>
+
+        <div class="row mt-4">
+            <!-- Left Column: Add and View Weekly Hours -->
+            <div class="col-md-7 mb-4">
+                <div class="card card-premium shadow-sm mb-4">
+                    <div class="card-header card-header-blue py-3">
+                        <h5 class="mb-0 text-white brand-font"><i class="fa fa-plus-circle me-2"></i> Add Weekly Availability Range</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form action="/doctor_slots/add_hours" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label">Available Days</label>
+                                <div class="d-flex flex-wrap gap-3 p-2 border rounded bg-light">
+                                    {% for d in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="day_of_week" value="{{ d }}" id="day_{{ d }}">
+                                        <label class="form-check-label small" for="day_{{ d }}">{{ d }}</label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-text">Tick every day this same start/end time applies to (e.g. Mon, Tue, Wed).</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Start Time <span class="text-muted small">(e.g. 9:00 AM)</span></label>
+                                    <input type="time" name="start_time" value="09:00" class="form-control form-control-custom" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">End Time <span class="text-muted small">(e.g. 5:00 PM)</span></label>
+                                    <input type="time" name="end_time" value="17:00" class="form-control form-control-custom" required>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" role="switch" id="enableBreakToggle" onclick="document.getElementById('breakFields').classList.toggle('d-none', !this.checked)">
+                                <label class="form-check-label" for="enableBreakToggle">Add a break / lunch time (this window will not be bookable)</label>
+                            </div>
+                            <div class="row d-none" id="breakFields">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Break Start</label>
+                                    <input type="time" name="break_start" value="13:00" class="form-control form-control-custom">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Break End</label>
+                                    <input type="time" name="break_end" value="14:00" class="form-control form-control-custom">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary-custom w-100 mt-2 py-2"><i class="fa fa-save me-2"></i> Save Availability Range</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Existing Availabilities -->
+                <div class="card card-premium shadow-sm">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h5 class="mb-0 brand-font text-primary"><i class="fa fa-list me-2"></i> Configured Weekly Hours</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Day of Week</th>
+                                        <th>Available Hours Range</th>
+                                        <th>Break / Lunch</th>
+                                        <th class="text-center pe-4">Options</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if availabilities %}
+                                        {% for item in availabilities %}
+                                        <tr>
+                                            <td class="ps-4 fw-semibold text-dark">{{ item.day_of_week }}</td>
+                                            <td>
+                                                <span class="badge bg-light text-primary border border-primary-subtle fs-7">
+                                                    <i class="fa fa-clock me-1"></i> {{ item.start_time_str }} - {{ item.end_time_str }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if item.break_start_str %}
+                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle fs-7">
+                                                    <i class="fa fa-mug-hot me-1"></i> {{ item.break_start_str }} - {{ item.break_end_str }}
+                                                </span>
+                                                {% else %}
+                                                <span class="text-muted small">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center pe-4">
+                                                <a href="/doctor_slots/delete_hours/{{ item.id }}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remove availability for this day?');"><i class="fa fa-trash"></i> Delete</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4 text-muted">No availability ranges defined yet. Define working hours above.</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Auto-Generate 20-Min Slots for calendar dates -->
+            <div class="col-md-5 mb-4">
+                <div class="card card-premium shadow-sm mb-4">
+                    <div class="card-header card-header-cyan py-3">
+                        <h5 class="mb-0 text-white brand-font"><i class="fa fa-magic me-2"></i> Auto-Generate 20-Min Slots</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <p class="text-muted small">Select a future date on which you want to open consultations. The system will look up the matching day's working hours and partition them into exact 20-minute slots (skipping your break time, if set). Slots are also generated automatically the moment a patient views this date.</p>
+                        <form action="/doctor_slots/generate" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label">Target Calendar Date</label>
+                                <input type="date" name="target_date" class="form-control form-control-custom" min="{{ today_date }}" required>
+                            </div>
+                            <button type="submit" class="btn btn-secondary-custom w-100 py-3"><i class="fa fa-bolt me-2"></i> Generate 20-Min Slots</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Display active slots -->
+                <div class="card card-premium shadow-sm">
+                    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 brand-font text-primary"><i class="fa fa-calendar-alt me-2"></i> Active Generated Slots</h5>
+                    </div>
+                    <div class="card-body p-3" style="max-height: 280px; overflow-y: auto;">
+                        {% if slots %}
+                            <div class="slot-grid mt-1">
+                                {% for slot in slots %}
+                                    <div class="p-2 border rounded text-center small bg-light" title="Slot status works: {{ slot.status }}">
+                                        <b>{{ slot.appointment_date }}</b><br/>
+                                        {{ slot.slot_start_time_str }}<br/>
+                                        {% if slot.status == 'available' %}
+                                            <span class="text-success small fw-bold">Available</span>
+                                        {% elif slot.status == 'booked' %}
+                                            <span class="text-primary small fw-bold">Booked</span>
+                                        {% elif slot.status == 'completed' %}
+                                            <span class="text-secondary small fw-bold">Completed</span>
+                                        {% else %}
+                                            <span class="text-danger small fw-bold">Cancelled</span>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-center py-4 my-2 small">No active generated slots. Generate slots for calendar dates above.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
